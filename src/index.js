@@ -15,7 +15,7 @@ function checksExistsUserAccount(req, res, next) {
   const {username} = req.headers
   const user = users.find(user => user.username === username)
   if(!user){
-    return res.status(404).json({error: 'Mensagem do erro'})
+    return res.status(404).json({error: 'Mensagem do erro.'})
   }
 
     req.user = user
@@ -26,6 +26,12 @@ function checksExistsUserAccount(req, res, next) {
 app.post('/users', (req, res) => {
   const {name, username} = req.body
 
+  const userAlreadyExists = users.some(user => user.username === username)
+
+  if(userAlreadyExists){
+    res.status(400).json({error: "Mensagem de erro."})
+  }
+
   const user = { 
     id: uuidv4(), 
     name: name, 
@@ -34,19 +40,17 @@ app.post('/users', (req, res) => {
   }
 
   users.push(user)
-  res.status(201).json(user)
+  return res.status(201).json(user)
 });
 
 app.get('/todos', checksExistsUserAccount, (req, res) => {
   const {user} = req
-
-  return res.status(200).json(user.todos)
-  
+  return res.status(201).json(user.todos)
 });
 
 app.post('/todos', checksExistsUserAccount,(req, res) => {
-  const {user} = req
   const {title, deadline} = req.body
+  const {user} = req
 
   const todo = { 
     id: uuidv4(),
@@ -69,7 +73,7 @@ app.put('/todos/:id', checksExistsUserAccount, (req, res) => {
   const {title, deadline} = req.body
 
   const indexOfTodo = user.todos.findIndex(todo => todo.id === id) // Caso nao encontre o id, ele retorn -1
-  if (!indexOfTodo){
+  if (indexOfTodo < 0){
     return res.status(404).json({error: 'Mensagem do erro'})
   }
 
@@ -78,9 +82,7 @@ app.put('/todos/:id', checksExistsUserAccount, (req, res) => {
   title ? newTodo.title = title : false 
   deadline ? newTodo.deadline = deadline : false
   
-  return res.status(204).json(newTodo)
-
-  
+  return res.status(200).json(newTodo)
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (req, res) => {
@@ -89,14 +91,13 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (req, res) => {
 
   const indexOfTodo = user.todos.findIndex(todo => todo.id === id)
 
-  if(!indexOfTodo){
+  if(indexOfTodo < 0){
     return res.status(404).json({error: 'Mensagem do erro'})
   }
 
   user.todos[indexOfTodo].done = true
-  console.log(user.todos[indexOfTodo].done)
 
-  return res.status(204).json({done: user.todos[indexOfTodo].done})
+  return res.status(200).json(user.todos[indexOfTodo])
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (req, res) => {
@@ -105,12 +106,12 @@ app.delete('/todos/:id', checksExistsUserAccount, (req, res) => {
 
   const indexOfTodo = user.todos.findIndex(todo => todo.id === id)
 
-  if(!indexOfTodo){
+  if(indexOfTodo < 0){
     return res.status(404).json({error: 'Mensagem do erro'})
   }
 
   user.todos.splice(indexOfTodo, 1)
-  res.status(204).json({done: user.todos})
+  res.status(204).send()
 });
 
 module.exports = app;
